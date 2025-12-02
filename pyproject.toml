@@ -1,0 +1,10 @@
+[project]
+name = "energy_forecast"
+version = "0.1.0"
+description = "Pipeline de forecasting énergétique avec Dagster."
+authors = [{name="Taha", email="taha.elalmi@yahoo.com"}]
+requires-python = ">=3.11"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

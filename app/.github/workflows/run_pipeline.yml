@@ -1,0 +1,31 @@
+name: Run Daily Forecast Pipeline
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # Tous les jours à 01:00 UTC
+  workflow_dispatch:       # Permet de lancer manuellement
+
+jobs:
+  run_pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Dagster Job
+        run: |
+          dagster job execute \
+          -f flows/pipeline/run_full_pipeline.py \
+          -j full_pipeline_job \
+          --executor-config '{"multiprocess": {"max_concurrent": 1}}'

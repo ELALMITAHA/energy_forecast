@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.swp
+*.egg-info/
+*.egg
+.venv/
+.env
+
+# Logs
+logs/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Data
+data/forcasts/
+data/processed/
+data/raw/
+
+# Models
+models/
+
+# Dagster temporary files
+.tmp_dagster_home_*/
+
+# VSCode
+.vscode/
+
+# Pip cache
+__pypackages__/

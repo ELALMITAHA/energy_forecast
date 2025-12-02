@@ -1,0 +1,3 @@
+load_from:
+  - python_file:
+      relative_path: flows/pipeline/run_full_pipeline_dagster.py
