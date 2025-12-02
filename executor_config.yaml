@@ -1,3 +1,4 @@
 execution:
-  multiprocess:
-    max_concurrent: 1
+  config:
+    multiprocess:
+      max_concurrent: 1
