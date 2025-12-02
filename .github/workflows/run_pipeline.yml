@@ -27,5 +27,5 @@ jobs:
         run: |
           dagster job execute \
             -f flows/pipeline/run_full_pipeline_dagster.py \
-            -j full_pipeline_job \
+            -j full_pipeline \
             --config executor_config.yaml
