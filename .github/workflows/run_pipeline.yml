@@ -48,38 +48,39 @@ jobs:
 
       # --- Upload des artefacts ---
       - name: Upload raw data
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: raw-data
           path: /tmp/artifacts/data/raw/
 
       - name: Upload processed data
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: processed-data
           path: /tmp/artifacts/data/processed/
 
       - name: Upload forecast
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: forecast
           path: /tmp/artifacts/data/forecasts/
 
       - name: Upload metrics
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: metrics
           path: /tmp/artifacts/data/metrics/
 
       - name: Upload model
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: model
           path: /tmp/artifacts/models/
 
       - name: Upload logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: logs
           path: /tmp/artifacts/logs/
+
 
