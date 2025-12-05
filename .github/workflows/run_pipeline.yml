@@ -46,41 +46,26 @@ jobs:
             -j full_pipeline \
             --config executor_config.yaml
 
-      # --- Upload des artefacts ---
-      - name: Upload raw data
-        uses: actions/upload-artifact@v4
-        with:
-          name: raw-data
-          path: /tmp/artifacts/data/raw/
+      - name: Copy artifacts into repo folder
+        run: |
+          mkdir -p data-artifact/forecasts
+          mkdir -p data-artifact/metrics
 
-      - name: Upload processed data
-        uses: actions/upload-artifact@v4
-        with:
-          name: processed-data
-          path: /tmp/artifacts/data/processed/
+          cp /tmp/artifacts/data/forecasts/*.parquet data-artifact/forecasts/ || true
+          cp /tmp/artifacts/data/metrics/*.json data-artifact/metrics/ || true
 
-      - name: Upload forecast
-        uses: actions/upload-artifact@v4
-        with:
-          name: forecast
-          path: /tmp/artifacts/data/forecasts/
+      - name: Commit and push data-artifact
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-      - name: Upload metrics
-        uses: actions/upload-artifact@v4
-        with:
-          name: metrics
-          path: /tmp/artifacts/data/metrics/
+          git add data-artifact/*
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update data-artifact (auto) [skip ci]"
+            git push origin HEAD:main
+          fi
 
-      - name: Upload model
-        uses: actions/upload-artifact@v4
-        with:
-          name: model
-          path: /tmp/artifacts/models/
-
-      - name: Upload logs
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs
-          path: /tmp/artifacts/logs/
 
 
