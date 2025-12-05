@@ -1,4 +1,4 @@
-name: Run Daily Forecast Pipeline
+name: Daily MLOps Forecast Pipeline
 
 on:
   schedule:
@@ -23,9 +23,63 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Prepare artifact directories
+        run: |
+          mkdir -p /tmp/artifacts/data/raw
+          mkdir -p /tmp/artifacts/data/processed
+          mkdir -p /tmp/artifacts/data/forecasts
+          mkdir -p /tmp/artifacts/data/metrics
+          mkdir -p /tmp/artifacts/models
+          mkdir -p /tmp/artifacts/logs
+
       - name: Run Dagster Job
+        env:
+          RAW_DIR: /tmp/artifacts/data/raw
+          PROCESSED_DIR: /tmp/artifacts/data/processed
+          FORECAST_DIR: /tmp/artifacts/data/forecasts
+          METRICS_DIR: /tmp/artifacts/data/metrics
+          MODELS_DIR: /tmp/artifacts/models
+          LOGS_DIR: /tmp/artifacts/logs
         run: |
           dagster job execute \
-            -f flows/pipeline/run_full_pipeline_dagster.py \
+            -f src/pipeline/run_full_pipeline_dagster.py \
             -j full_pipeline \
             --config executor_config.yaml
+
+      # --- Upload des artefacts ---
+      - name: Upload raw data
+        uses: actions/upload-artifact@v3
+        with:
+          name: raw-data
+          path: /tmp/artifacts/data/raw/
+
+      - name: Upload processed data
+        uses: actions/upload-artifact@v3
+        with:
+          name: processed-data
+          path: /tmp/artifacts/data/processed/
+
+      - name: Upload forecast
+        uses: actions/upload-artifact@v3
+        with:
+          name: forecast
+          path: /tmp/artifacts/data/forecasts/
+
+      - name: Upload metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: metrics
+          path: /tmp/artifacts/data/metrics/
+
+      - name: Upload model
+        uses: actions/upload-artifact@v3
+        with:
+          name: model
+          path: /tmp/artifacts/models/
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs
+          path: /tmp/artifacts/logs/
+
