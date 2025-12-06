@@ -58,9 +58,13 @@ def train_and_forecast(model_name : str):
     # --- train_model ---- 
     model.fit(train)
 
-    # --- make prediction ---
+    # --- make prediction for metrics  ---
     future = model.make_future_dataframe(periods=len(test), freq="D")
     forecast = model.predict(future)
+
+    # --- make prediction for ploting j+6
+    future_j_plus_6 = model.make_future_dataframe(periods=len(test)+6, freq="D")
+    forecast_j_plus_6 = model.predict(future_j_plus_6)
 
     # --- récupérer juste les prédictions pour le test set ---
     yhat_test = forecast['yhat'].values[-len(test):]
@@ -89,7 +93,9 @@ def train_and_forecast(model_name : str):
 
     # ---- save forecast ---- (utile pour Streamlit)
     forecast_path = Path(FORECAST_DIR, f"{model_name}_forecast.parquet")
-    forecast.to_parquet(forecast_path, index=False)
+    # adding y to forcast for ploting y vs yhat 
+    forecast_j_plus_6 = forecast_j_plus_6.merge(df_cp, on="ds",how="left")
+    forecast_j_plus_6.to_parquet(forecast_path, index=False)
 
     # ---- return useful objects for dagster ----
     return {
@@ -100,5 +106,7 @@ def train_and_forecast(model_name : str):
         "metrics": metrics,
     }
 
+if __name__ == "__main__":
+    train_and_forecast("prophet")
 
 
