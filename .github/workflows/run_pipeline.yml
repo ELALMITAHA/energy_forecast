@@ -26,7 +26,7 @@ jobs:
       - name: Install HuggingFace CLI
         run: |
           curl -LsSf https://hf.co/cli/install.sh | bash
-          echo "HUGGING_FACE_HUB_TOKEN=${{ secrets.HF_TOKEN }}" >> $GITHUB_ENV
+          echo "HF_TOKEN=${{ secrets.HF_TOKEN }}" >> $GITHUB_ENV
 
       - name: Prepare artifact directories
         run: |
@@ -59,12 +59,15 @@ jobs:
           cp /tmp/artifacts/data/metrics/*.json data-artifact/metrics/ || true
 
       - name: Upload artifacts to HuggingFace dataset
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           hf upload tahaelalmi/energy-forecast-artifacts \
             data-artifact/ \
             --repo-type=dataset \
             --token $HF_TOKEN \
             --recursive
+
 
 
 
