@@ -1,38 +1,51 @@
 from huggingface_hub import hf_hub_download
 import pandas as pd
 import json
+from pathlib import Path
 
-def get_data(file_type: str, repo_id: str = "tahaelalmi/energy-forecast-artifacts"):
+
+def get_data(file_type: str,
+             local_base: str = "data",
+             repo_id: str = "tahaelalmi/energy-forecast-artifacts"):
     """
-    Charge un artifact (forecast ou metrics) depuis HuggingFace Hub.
+    Charge les données dynamiquement selon l'environnement :
+    - local si le fichier existe,
+    - sinon depuis HuggingFace Hub.
 
     Args:
         file_type (str): "forecast" ou "metrics"
-        repo_id (str): nom du dataset HuggingFace
+        local_base (str): chemin racine local pour fallback
+        repo_id (str): HuggingFace dataset repo
 
     Returns:
-        pd.DataFrame pour forecast
-        dict pour metrics
+        pd.DataFrame ou dict
     """
-
-    files = {
-        "forecast": "forecasts/prophet_forecast.parquet",
-        "metrics": "metrics/prophet_metrics.json",
+    paths = {
+        "forecast": ("forecasts/prophet_forecast.parquet", pd.read_parquet),
+        "metrics": ("metrics/prophet_metrics.json", lambda f: json.load(open(f))),
     }
 
-    if file_type not in files:
-        raise ValueError(f"[get_data] invalid file_type='{file_type}'. Use: forecast | metrics")
+    if file_type not in paths:
+        raise ValueError(f"file_type doit être 'forecast' ou 'metrics', got '{file_type}'")
 
-    # Download depuis HF
-    local_path = hf_hub_download(
-        repo_id=repo_id,
-        filename=files[file_type],
-        repo_type="dataset"
-    )
+    relative_path, loader = paths[file_type]
+    local_file = Path(local_base) / relative_path
 
-    # Parsing
-    if file_type == "forecast":
-        return pd.read_parquet(local_path)
+    # Lecture locale si disponible
+    if local_file.exists():
+        return loader(local_file)
 
-    with open(local_path, "r") as f:
-        return json.load(f)
+    # Sinon téléchargement depuis HuggingFace Hub
+    hf_file = hf_hub_download(repo_id=repo_id,
+                              filename=relative_path,
+                              repo_type="dataset")  # public dataset, pas de token nécessaire
+    return loader(hf_file)
+
+if __name__ =="__main__":
+
+    # Test
+    df_forecast = get_data("forecast")
+    metrics = get_data("metrics")
+
+    print(df_forecast.tail())
+    print(metrics)
