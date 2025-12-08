@@ -4,30 +4,35 @@ import json
 
 def get_data(file_type: str, repo_id: str = "tahaelalmi/energy-forecast-artifacts"):
     """
-    Charge les données depuis HuggingFace Hub.
-    
+    Charge un artifact (forecast ou metrics) depuis HuggingFace Hub.
+
     Args:
         file_type (str): "forecast" ou "metrics"
-        repo_id (str): HuggingFace dataset repo
+        repo_id (str): nom du dataset HuggingFace
 
     Returns:
-        pd.DataFrame ou dict
+        pd.DataFrame pour forecast
+        dict pour metrics
     """
-    paths = {
+
+    files = {
         "forecast": "forecasts/prophet_forecast.parquet",
         "metrics": "metrics/prophet_metrics.json",
     }
 
-    if file_type not in paths:
-        raise ValueError(f"file_type doit être 'forecast' ou 'metrics', got '{file_type}'")
+    if file_type not in files:
+        raise ValueError(f"[get_data] invalid file_type='{file_type}'. Use: forecast | metrics")
 
-    hf_file = paths[file_type]
+    # Download depuis HF
+    local_path = hf_hub_download(
+        repo_id=repo_id,
+        filename=files[file_type],
+        repo_type="dataset"
+    )
 
-    # Téléchargement depuis HF Hub
-    local_file = hf_hub_download(repo_id=repo_id, filename=hf_file)
-
+    # Parsing
     if file_type == "forecast":
-        return pd.read_parquet(local_file)
-    else:  # metrics
-        with open(local_file, "r") as f:
-            return json.load(f)
+        return pd.read_parquet(local_path)
+
+    with open(local_path, "r") as f:
+        return json.load(f)
