@@ -41,8 +41,8 @@ jobs:
           mkdir -p ${{ github.workspace }}/tmp/artifacts/data_quality
           mkdir -p ${{ github.workspace }}/tmp/artifacts/logs
 
-      # 6. Run Dagster Job
-      - name: Run Dagster Job
+      # 6. Run Dagster Pipeline (gère retrain automatiquement)
+      - name: Run Dagster Pipeline
         env:
           RAW_DIR: ${{ github.workspace }}/tmp/data/raw
           PROCESSED_DIR: ${{ github.workspace }}/tmp/data/processed
@@ -69,33 +69,17 @@ jobs:
           cp ${{ github.workspace }}/tmp/artifacts/data_quality/*.json data-artifact/data_quality/ || true
           cp ${{ github.workspace }}/tmp/artifacts/logs/*.log data-artifact/logs/ || true
 
-      # 8. Upload artifacts to HuggingFace dataset in subfolders
+      # 8. Upload artifacts to HuggingFace dataset
       - name: Upload artifacts to HuggingFace dataset
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Models
           hf upload tahaelalmi/energy-forecast-artifacts \
-            data-artifact/models \
-            models \
+            data-artifact \
             --repo-type dataset \
             --token $HF_TOKEN
 
-          # Forecasts
-          hf upload tahaelalmi/energy-forecast-artifacts \
-            data-artifact/forecasts \
-            forecasts \
-            --repo-type dataset \
-            --token $HF_TOKEN
-
-          # Data quality
-          hf upload tahaelalmi/energy-forecast-artifacts \
-            data-artifact/data_quality \
-            data_quality \
-            --repo-type dataset \
-            --token $HF_TOKEN
-
-      # 9. Upload pipeline logs as GitHub Action artifact (optional)
+      # 9. Upload pipeline logs as GitHub Action artifact
       - name: Upload pipeline log
         uses: actions/upload-artifact@v4
         with:
