@@ -52,7 +52,7 @@ jobs:
           LOGS_DIR: /tmp/artifacts/logs
         run: |
           dagster job execute \
-            -f src/pipeline/run_full_pipeline_dagster.py \
+            -f src/flow/run_full_pipeline_dagster.py \
             -j full_pipeline \
             --config executor_config.yaml
 
