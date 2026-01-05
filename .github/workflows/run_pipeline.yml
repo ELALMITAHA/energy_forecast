@@ -75,10 +75,9 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           hf upload tahaelalmi/energy-forecast-artifacts \
-            data-artifact/models \
-            data-artifact/forecasts \
-            data-artifact/data_quality \
+            data-artifact \
             --repo-type dataset \
+            --recursive \
             --token $HF_TOKEN
 
       # 9. Upload pipeline logs as GitHub Action artifact (optional)
