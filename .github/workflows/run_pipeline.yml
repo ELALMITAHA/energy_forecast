@@ -2,7 +2,7 @@ name: Daily MLOps Forecast Pipeline
 
 on:
   schedule:
-    - cron: "0 1 * * *"   # Tous les jours à 01:00 UTC
+    - cron: "0 1 * * *"
   workflow_dispatch:
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      # 3. Install full Python dependencies
+      # 3. Install dependencies
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -69,23 +69,33 @@ jobs:
           cp ${{ github.workspace }}/tmp/artifacts/data_quality/*.json data-artifact/data_quality/ || true
           cp ${{ github.workspace }}/tmp/artifacts/logs/*.log data-artifact/logs/ || true
 
-      # 8. Upload artifacts to HuggingFace dataset
+      # 8. Upload artifacts to HuggingFace dataset in subfolders
       - name: Upload artifacts to HuggingFace dataset
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          hf upload tahaelalmi/energy-forecast-artifacts \
-            data-artifact \
+          hf upload tahaelalmi/energy-forecast-artifacts/models \
+            data-artifact/models \
             --repo-type dataset \
-            --recursive \
             --token $HF_TOKEN
 
-      # 9. Upload pipeline logs as GitHub Action artifact (optional)
-      - name: Upload pipeline log
+          hf upload tahaelalmi/energy-forecast-artifacts/forecasts \
+            data-artifact/forecasts \
+            --repo-type dataset \
+            --token $HF_TOKEN
+
+          hf upload tahaelalmi/energy-forecast-artifacts/data_quality \
+            data-artifact/data_quality \
+            --repo-type dataset \
+            --token $HF_TOKEN
+
+      # 9. Upload logs as GitHub Action artifact
+      - name: Upload pipeline logs
         uses: actions/upload-artifact@v4
         with:
           name: pipeline-log
           path: data-artifact/logs/
+
 
 
 
