@@ -17,17 +17,14 @@ MODELS_DIR = ARTIFACTS_DIR / "models"
 FORECAST_DIR = ARTIFACTS_DIR / "forecasts"
 METRICS_DIR = ARTIFACTS_DIR / "metrics"
 
-# ************ ENVIRONMENT DETECTION ************
-IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS", "false").lower() == "true"
-if IS_GITHUB_ACTIONS:
-    BASE_TMP = Path("/tmp/artifacts")
-    RAW_DIR = BASE_TMP / "data/raw"
-    PROCESSED_DIR = BASE_TMP / "data/processed"
-    PROCESSED_FINAL_DIR = BASE_TMP / "data/processed/final"
-    FORECAST_DIR = BASE_TMP / "data/forecasts"
-    METRICS_DIR = BASE_TMP / "data/metrics"
-    MODELS_DIR = BASE_TMP / "models"
-    DATA_QUALITY_DIR = BASE_TMP / "data_quality"
+# ************ ENVIRONMENT DETECTION & PATHS ************
+RAW_DIR = Path(os.environ.get("RAW_DIR", "./tmp/data/raw"))
+PROCESSED_DIR = Path(os.environ.get("PROCESSED_DIR", "./tmp/data/processed"))
+PROCESSED_FINAL_DIR = Path(os.environ.get("PROCESSED_FINAL_DIR", "./tmp/data/processed/final"))
+FORECAST_DIR = Path(os.environ.get("FORECAST_DIR", "./tmp/artifacts/forecasts"))
+METRICS_DIR = Path(os.environ.get("METRICS_DIR", "./tmp/artifacts/metrics"))
+MODELS_DIR = Path(os.environ.get("MODELS_DIR", "./tmp/artifacts/models"))
+DATA_QUALITY_DIR = Path(os.environ.get("DATA_QUALITY_DIR", "./tmp/artifacts/data_quality"))
 
 # ************ ENSURE DIRECTORIES EXIST ************
 for d in [
