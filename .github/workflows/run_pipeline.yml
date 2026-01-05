@@ -10,38 +10,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Python
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+      # 3️⃣ Install full Python dependencies
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # 4️⃣ Install HuggingFace CLI
       - name: Install HuggingFace CLI
         run: |
           curl -LsSf https://hf.co/cli/install.sh | bash
 
+      # 5️⃣ Prepare artifact directories
       - name: Prepare artifact directories
         run: |
-          mkdir -p /tmp/artifacts/data/raw
-          mkdir -p /tmp/artifacts/data/processed
-          mkdir -p /tmp/artifacts/data/forecasts
-          mkdir -p /tmp/artifacts/data/metrics
+          mkdir -p /tmp/data/raw
+          mkdir -p /tmp/data/processed
+          mkdir -p /tmp/artifacts/data_quality
+          mkdir -p /tmp/artifacts/forecasts
           mkdir -p /tmp/artifacts/models
           mkdir -p /tmp/artifacts/logs
 
+      # 6️⃣ Run Dagster Job
       - name: Run Dagster Job
         env:
-          RAW_DIR: /tmp/artifacts/data/raw
-          PROCESSED_DIR: /tmp/artifacts/data/processed
-          FORECAST_DIR: /tmp/artifacts/data/forecasts
-          METRICS_DIR: /tmp/artifacts/data/metrics
+          RAW_DIR: /tmp/data/raw
+          PROCESSED_DIR: /tmp/data/processed
+          DATA_QUALITY_DIR: /tmp/artifacts/data_quality
+          FORECAST_DIR: /tmp/artifacts/forecasts
           MODELS_DIR: /tmp/artifacts/models
           LOGS_DIR: /tmp/artifacts/logs
         run: |
@@ -50,21 +56,36 @@ jobs:
             -j full_pipeline \
             --config executor_config.yaml
 
-      - name: Copy generated artifacts to upload folder
+      # 7️⃣ Copy generated artifacts to upload folder
+      - name: Copy generated artifacts
         run: |
+          mkdir -p data-artifact/models
           mkdir -p data-artifact/forecasts
-          mkdir -p data-artifact/metrics
-          cp /tmp/artifacts/data/forecasts/*.parquet data-artifact/forecasts/ || true
-          cp /tmp/artifacts/data/metrics/*.json data-artifact/metrics/ || true
+          mkdir -p data-artifact/data_quality
+          cp /tmp/artifacts/models/*.pkl data-artifact/models/ || true
+          cp /tmp/artifacts/forecasts/*.parquet data-artifact/forecasts/ || true
+          cp /tmp/artifacts/data_quality/*.json data-artifact/data_quality/ || true
+          cp /tmp/artifacts/logs/*.log data-artifact/logs/ || true
 
+      # 8️⃣ Upload artifacts to HuggingFace dataset (overwrite)
       - name: Upload artifacts to HuggingFace dataset
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           hf upload tahaelalmi/energy-forecast-artifacts \
-            data-artifact/ \
+            data-artifact/models \
+            data-artifact/forecasts \
+            data-artifact/data_quality \
             --repo-type dataset \
             --token $HF_TOKEN
+
+      # 9️⃣ Upload pipeline logs as GitHub Action artifact (optional)
+      - name: Upload pipeline log
+        uses: actions/upload-artifact@v3
+        with:
+          name: pipeline-log
+          path: data-artifact/logs/
+
 
 
 
