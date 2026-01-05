@@ -44,12 +44,12 @@ jobs:
       # 6 Run Dagster Job
       - name: Run Dagster Job
         env:
-          RAW_DIR: /tmp/data/raw
-          PROCESSED_DIR: /tmp/data/processed
-          DATA_QUALITY_DIR: /tmp/artifacts/data_quality
-          FORECAST_DIR: /tmp/artifacts/forecasts
-          MODELS_DIR: /tmp/artifacts/models
-          LOGS_DIR: /tmp/artifacts/logs
+          RAW_DIR: ./tmp/data/raw
+          PROCESSED_DIR: ./tmp/data/processed
+          DATA_QUALITY_DIR: ./tmp/artifacts/data_quality
+          FORECAST_DIR: ./tmp/artifacts/forecasts
+          MODELS_DIR: ./tmp/artifacts/models
+          LOGS_DIR: ./tmp/artifacts/logs
         run: |
           dagster job execute \
             -f src/flow/run_full_pipeline_dagster.py \
