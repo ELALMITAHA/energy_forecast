@@ -1,3 +1,4 @@
+import os 
 from huggingface_hub import hf_hub_download
 import pandas as pd
 import json
@@ -33,13 +34,8 @@ def get_data(file_type: str, repo_id: str = "tahaelalmi/energy-forecast-artifact
         repo_id=repo_id,
         filename=filename,
         subfolder=subfolder,
-        repo_type="dataset",  # repo public
+        repo_type="dataset",  # repo private
+        token=os.getenv("HF_TOKEN") 
     )
 
     return loader(hf_file)
-
-if __name__ == "__main__":
-    # Test metrics
-    metrics_df = get_data("metrics")
-    print(f"[TEST] Metrics loaded: {len(metrics_df)} rows")
-    print(metrics_df.head(5))
