@@ -1,8 +1,6 @@
 name: Daily MLOps Forecast Pipeline
 
 on:
-  schedule:
-    - cron: "0 1 * * *"   # Tous les jours à 01:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -10,88 +8,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository
+      # ***** Checkout repository *****
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup Python
+      # ***** Setup Python *****
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # 3. Install Python dependencies
+      # ***** Install Python dependencies *****
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r pipeline_requirements.txt
 
-      # 4. Install HuggingFace CLI
+      # ***** Install Hugging Face CLI *****
       - name: Install HuggingFace CLI
         run: |
           curl -LsSf https://hf.co/cli/install.sh | bash
 
-      # 5. Prepare artifact directories
-      - name: Prepare artifact directories
-        run: |
-          mkdir -p ${{ github.workspace }}/tmp/data/raw
-          mkdir -p ${{ github.workspace }}/tmp/data/processed
-          mkdir -p ${{ github.workspace }}/tmp/artifacts/forecasts
-          mkdir -p ${{ github.workspace }}/tmp/artifacts/models
-          mkdir -p ${{ github.workspace }}/tmp/artifacts/data_quality
-          mkdir -p ${{ github.workspace }}/tmp/artifacts/logs
-
-      # 6. Run Dagster Pipeline (gère retrain automatiquement)
-      - name: Run Dagster Pipeline
-        env:
-          RAW_DIR: ${{ github.workspace }}/tmp/data/raw
-          PROCESSED_DIR: ${{ github.workspace }}/tmp/data/processed
-          PROCESSED_FINAL_DIR: ${{ github.workspace }}/tmp/data/processed/final
-          FORECAST_DIR: ${{ github.workspace }}/tmp/artifacts/forecasts
-          METRICS_DIR: ${{ github.workspace }}/tmp/artifacts/metrics
-          MODELS_DIR: ${{ github.workspace }}/tmp/artifacts/models
-          DATA_QUALITY_DIR: ${{ github.workspace }}/tmp/artifacts/data_quality
-          LOGS_DIR: ${{ github.workspace }}/tmp/artifacts/logs
-        run: |
-          dagster job execute \
-            -f src/flow/run_full_pipeline_dagster.py \
-            -j full_pipeline \
-            --config executor_config.yaml
-
-      # 7. Copy generated artifacts to upload folder
-      - name: Copy generated artifacts
-        run: |
-          mkdir -p data-artifact/models
-          mkdir -p data-artifact/forecasts
-          mkdir -p data-artifact/data_quality
-          cp ${{ github.workspace }}/tmp/artifacts/models/*.pkl data-artifact/models/ || true
-          cp ${{ github.workspace }}/tmp/artifacts/forecasts/*.parquet data-artifact/forecasts/ || true
-          cp ${{ github.workspace }}/tmp/artifacts/data_quality/*.json data-artifact/data_quality/ || true
-          cp ${{ github.workspace }}/tmp/artifacts/logs/*.log data-artifact/logs/ || true
-
-      # 8. Upload artifacts to HuggingFace dataset
-      - name: Upload artifacts to HuggingFace dataset
+      # ***** Run Dagster pipeline *****
+      - name: Run Dagster pipeline
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          hf upload tahaelalmi/energy-forecast-artifacts \
-            data-artifact \
-            --repo-type dataset \
-            --token $HF_TOKEN
+          echo "=== Running pipeline via Dagster ==="
+          PYTHONPATH=. dagster job execute \
+            -f src/flow/run_full_pipeline_dagster.py \
+            -j full_pipeline
 
-      # 9. Upload pipeline logs as GitHub Action artifact
-      - name: Upload pipeline log
-        uses: actions/upload-artifact@v4
-        with:
-          name: pipeline-log
-          path: data-artifact/logs/
-
-
-
-
-
-
-
-
+      # ***** Update artifacts on Hugging Face *****
+      - name: Update artifacts on HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          echo "=== Updating artifacts ==="
+          PYTHONPATH=. python src/updating_artifacts/overwrited_artifacts/update_artifacts.py
 
 
