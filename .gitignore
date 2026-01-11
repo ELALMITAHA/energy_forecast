@@ -8,6 +8,7 @@ __pycache__/
 *.egg
 .venv/
 .env
+.streamlit_env
 
 # Logs
 logs/
@@ -34,3 +35,12 @@ models/
 # Pip cache
 __pypackages__/
 
+# ===== Runtime / local artifacts =====
+data-artifact/
+artifacts/
+data/
+logs/
+models/
+
+# ===== Notebooks =====
+notebooks/
