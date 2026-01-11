@@ -12,4 +12,4 @@ import pandas as pd
 def display_monitoring(df, metrics):
     st.title("Dashboard Monitoring du Modèle")
 
-    st.subheader("A faire")
+    st.subheader("To do")

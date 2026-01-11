@@ -60,3 +60,5 @@ def color_path(path: str, color_code: str = "94") -> str:
         Code ANSI couleur (94=bleu, 95=magenta, 96=cyan, 93=jaune)
     """
     return f"\033[{color_code}m{path}\033[0m"
+
+

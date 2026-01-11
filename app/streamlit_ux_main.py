@@ -39,11 +39,12 @@ st.markdown(
 
 # --- loading data ---
 df = get_data("forecast")
-metris = get_data("metrics")
+metrics = get_data("metrics")
 
-page = st.sidebar.selectbox("Navigation", ["Résultats", "Monitoring"])
 
-if page == "Résultats":
-    display_results_ux(df, metris)
-elif page == "Monitoring":
-    display_monitoring(df, metris)
+
+
+
+display_results_ux(df, metrics)
+
+    

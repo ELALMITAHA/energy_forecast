@@ -45,6 +45,28 @@ OSD_PARAMS = {
 }
 
 
+# ************ TEMPORARY DATA AVAILABILITY CAP ************
+"""
+IMPORTANT NOTE (MLOps decision):
+
+Electricity consumption data (eco2mix) can be published with a delay of several days,
+while weather data remains available up to the current day.
+
+To avoid temporal misalignment between the target (consumption) and exogenous features
+(weather) during training and evaluation, weather data is temporarily capped to the
+last known availability date of the consumption data.
+
+This cap is ONLY applied to historical data preparation.
+Forecasting still relies on future weather data as expected.
+
+This behavior is intentional and documented.
+"""
+
+# ⚠️ TEMPORARY: last known availability date of consumption data
+# Update automatically once the API catches up
+TARGET_DATA_AVAILABLE_UNTIL = "2026-01-08"
+
+
 # ************ OPEN-METEO WEATHER API ************
 OPEN_METEO_BASE_URL = {
     "bordeaux_weather_archive": "https://archive-api.open-meteo.com/v1/archive",

@@ -3,57 +3,65 @@ import optuna
 
 class OptunaTuner:
     """
-    Hyperparameter tuning class using Optuna for any trainer interface.
+        Hyperparameter tuning using Optuna for any trainer interface.
 
-    This class orchestrates hyperparameter optimization for a given trainer
-    by executing multiple trials and evaluating performance with a custom metric.
+        This class orchestrates hyperparameter optimization for a given trainer by:
+        - Executing multiple trials.
+        - Evaluating performance using a custom metric.
+        - Returning the best model, parameters, and metric score.
 
-    Parameters
-    ----------
-    trainer_cls : class
-        Class implementing the trainer interface with methods:
-        - `suggest_params(trial)` → dict of hyperparameters
-        - `build(params)` → initialize model with hyperparameters
-        - `fit(df)` → train the model on dataframe
-        - `predict(df)` → return predictions as DataFrame or Series
+        Parameters
+        ----------
+        model_interface_cls : class
+            Trainer class implementing the interface:
+            - `suggest_params(trial)` → dict of hyperparameters
+            - `build(params)` → initialize model with hyperparameters
+            - `fit(df)` → train the model
+            - `predict(df)` → return predictions as DataFrame with target and pred columns
 
-    train_df : pd.DataFrame
-        Training dataset for fitting models.
+        train_df : pd.DataFrame
+            Training dataset.
 
-    test_df : pd.DataFrame
-        Test dataset for evaluating models.
+        test_df : pd.DataFrame
+            Testing dataset.
 
-    metric_fn : callable
-        Function to compute a metric between true and predicted values.
-        Example: mean_absolute_error.
+        metric_fn : callable
+            Function to compute a metric between true and predicted values.
 
-    n_trials : int, optional
-        Number of Optuna trials. Default is 50.
+        n_trials : int, optional
+            Number of Optuna trials. Default is 50.
 
-    direction : {"minimize", "maximize"}, optional
-        Optimization direction. Default is "minimize".
+        direction : {"minimize", "maximize"}, optional
+            Optimization direction. Default is "minimize".
 
-    target : str, optional
-        Name of the target column in test_df. Default is "y".
+        target : str, optional
+            Name of the target column in test_df. Default is "y".
 
-    Behavior
-    --------
-    - Uses Optuna to search for optimal hyperparameters.
-    - Builds, trains, and evaluates a new trainer for each trial.
-    - Returns the best model, best parameters, and best metric score.
+        Raises
+        ------
+        ValueError
+            If the trainer interface is invalid or returns inconsistent results.
 
-    Methods
-    -------
-    _objective(trial)
-        Defines the objective function for Optuna trials.
+        RuntimeError
+            If Optuna study fails or the tuning process encounters unexpected errors.
 
-    run()
-        Run the hyperparameter optimization and return the best model and results.
+        Notes
+        -----
+        - Designed for MLOps pipelines: idempotent, reproducible, and robust.
+        - Can be used with any trainer implementing the required interface.
+        - Structured logging recommended to monitor tuning progress.
 
-    Notes
-    -----
-    - Designed for MLOps pipelines: idempotent and reproducible.
-    - Easily adaptable to any trainer implementing the required interface.
+        Example
+        -------
+        >>> tuner = OptunaTuner(
+        >>>     model_interface_cls=ProphetInterface,
+        >>>     train_df=train_data,
+        >>>     test_df=test_data,
+        >>>     metric_fn=mean_absolute_error,
+        >>>     n_trials=30,
+        >>>     direction="minimize"
+        >>> )
+        >>> best_model, best_params, best_score = tuner.run()
     """
 
     def __init__(

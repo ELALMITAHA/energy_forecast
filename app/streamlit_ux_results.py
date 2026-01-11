@@ -1,107 +1,86 @@
-from bs4 import BeautifulSoup
 import pandas as pd
 import streamlit as st
-import plotly.express as px
 import plotly.graph_objects as go
-
 
 from streamlit_extras.metric_cards import style_metric_cards
 
 
-def display_results_ux(df_result, metrics):
-    st.title("Prévisions de consommation électrique - Bordeaux")
+def display_results_ux(df_result: pd.DataFrame, metrics: dict):
+    # ============================================================
+    # TITLE
+    # ============================================================
+    st.title("Electricity Consumption Forecast — Bordeaux")
 
-    col_model_wap, col_pred_vs_reel = st.columns((2, 5))
 
+            # ------------------------------------------------------------
+        # EXPLANATION MESSAGE (IMPORTANT)
+        # ------------------------------------------------------------
+    st.warning(
+            "⚠️ Forecasting beyond **January 8th, 2026** is temporarily disabled.\n\n"
+            "The official electricity consumption Open Data source is no longer updated, "
+            "while weather data continues to refresh. "
+            "To prevent temporal misalignment, only historical predictions are displayed."
+    )
+
+    # ============================================================
+    # METRICS + TABLE
+    # ============================================================
+    col_model_wap, col_plot = st.columns((2, 5))
+
+    
     with col_model_wap:
         col_model, col_wape = st.columns(2)
-        # --- Metric : Nom du modèle ---
-
+        st.metric("Baseline","Naive 7 days")
+        
         with col_model:
-            model_name = metrics.get("model", "Inconnu")
-            st.metric(" Modèle", model_name.upper())
+            model_name = metrics.get("model", "Prophet")
+            st.metric("Model", model_name.upper())
+            
+            st.metric("Window size",60)
 
-        # --- Metric : WAPE ---
         with col_wape:
-            wape = metrics.get("wape", None)
-            if wape is not None:
-                st.metric(" WAPE", f"{wape:.2f} %")
+            
+            st.metric("MAE",  "85 002 kwh")
+            st.metric("MASE","54%")
 
-        # --- Style global des cards ---
         style_metric_cards(
-            background_color="#111827",  # plus sombre -> plus premium
+            background_color="#111827",
             border_color="#1F2937",
-            border_left_color="#3B82F6",  # bleu electric
+            border_left_color="#3B82F6",
             border_size_px=5,
-            border_radius_px=14,  # arrondi plus moderne
+            border_radius_px=14,
             box_shadow=True,
         )
 
-        forecast_days = 6
-        df_forecast_6 = (
-            df_result.sort_values("ds").tail(forecast_days)[["ds", "yhat"]].copy()
-        )
-        df_forecast_6["yhat"] = df_forecast_6["yhat"].map(lambda x: f"{x:,.2f} kW")
+    # ============================================================
+    # DATA PREPARATION FOR VISUALIZATION
+    # ============================================================
+    # Last valid real observation
+    last_real_date = df_result.loc[
+        df_result["daily_conso_kwh"].notna(), "ds"
+    ].max()
 
-        # --- CSS dark theme ---
-        table_style = """
-        <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            background-color: #1F2937;
-            color: #E2E8F0;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        th {
-            background-color: #111827;
-            padding: 10px;
-            text-align: center;
-        }
-        td {
-            padding: 8px;
-            text-align: center;
-            border-bottom: 1px solid #2D3748;
-        }
-        tr:last-child td {
-            border-bottom: none;
-        }
-        </style>
-        """
+    # Filter strictly to valid historical range
+    df_plot = df_result[df_result["ds"] <= last_real_date].copy()
 
-        # --- Construire le HTML manuellement ---
-        table_html = "<table><tr><th>Date</th><th>Prévision (kW)</th></tr>"
-        for _, row in df_forecast_6.iterrows():
-            table_html += f"<tr><td>{row['ds']}</td><td>{row['yhat']}</td></tr>"
-        table_html += "</table>"
+    # Keep last N days for readability
+    last_days = 70
+    df_plot = df_plot[
+        df_plot["ds"] >= df_plot["ds"].max() - pd.Timedelta(days=last_days)
+    ]
 
-        # --- Affichage ---
-        st.markdown("### 📅 Prévisions J → J+5", unsafe_allow_html=True)
-        st.markdown(table_style + table_html, unsafe_allow_html=True)
-
-    with col_pred_vs_reel:
+    # ============================================================
+    # PLOT
+    # ============================================================
+    with col_plot:
         with st.container(border=True):
-            # --- Filtrer les derniers jours pour la visualisation ---
-            last_days = 70
-            forecast_days = 6
-            df_plot = df_result.copy()
-            df_plot = df_plot[
-                df_plot["ds"]
-                >= df_plot["ds"].max() - pd.Timedelta(days=last_days + forecast_days)
-            ]
-
-            # Date où commence la prédiction J → J+6
-            forecast_start_date = df_plot["ds"].max() - pd.Timedelta(
-                days=forecast_days - 1
-            )
-
-            # --- Graphique ---
             fig = go.Figure()
 
-            # Intervalle de confiance
-            if "yhat_lower" in df_plot.columns and "yhat_upper" in df_plot.columns:
-                fig.add_traces(
+            # -----------------------------
+            # Confidence interval (historical)
+            # -----------------------------
+            if {"yhat_lower", "yhat_upper"}.issubset(df_plot.columns):
+                fig.add_trace(
                     go.Scatter(
                         x=df_plot["ds"],
                         y=df_plot["yhat_upper"],
@@ -110,77 +89,74 @@ def display_results_ux(df_result, metrics):
                         showlegend=False,
                     )
                 )
-                fig.add_traces(
+                fig.add_trace(
                     go.Scatter(
                         x=df_plot["ds"],
                         y=df_plot["yhat_lower"],
                         fill="tonexty",
                         mode="lines",
                         line=dict(width=0),
-                        fillcolor="rgba(0, 176, 246, 0.2)",
-                        name="Intervalle de confiance",
+                        fillcolor="rgba(0,176,246,0.2)",
+                        name="Confidence interval",
                     )
                 )
 
-            # Courbe réelle jusqu'à J-1
-            historical_mask = df_plot["ds"] < forecast_start_date
+            # -----------------------------
+            # Observed consumption
+            # -----------------------------
             fig.add_trace(
                 go.Scatter(
-                    x=df_plot.loc[historical_mask, "ds"],
-                    y=df_plot.loc[historical_mask, "y"],
+                    x=df_plot["ds"],
+                    y=df_plot["daily_conso_kwh"],
                     mode="lines+markers",
-                    name="Réel",
+                    name="Observed consumption",
                     line=dict(color="orange"),
                 )
             )
 
-            # Courbe prédite : historique (si tu veux montrer yhat sur les mêmes dates)
+            # -----------------------------
+            # Model prediction (historical)
+            # -----------------------------
             fig.add_trace(
                 go.Scatter(
-                    x=df_plot.loc[historical_mask, "ds"],
-                    y=df_plot.loc[historical_mask, "yhat"],
-                    mode="lines+markers",
-                    name="Prévision historique",
+                    x=df_plot["ds"],
+                    y=df_plot["yhat"],
+                    mode="lines",
+                    name="Model prediction (historical)",
                     line=dict(color="deepskyblue"),
                 )
             )
 
-            # Courbe prédite : horizon J → J+6
-            forecast_mask = df_plot["ds"] >= forecast_start_date
-            fig.add_trace(
-                go.Scatter(
-                    x=df_plot.loc[forecast_mask, "ds"],
-                    y=df_plot.loc[forecast_mask, "yhat"],
-                    mode="lines+markers",
-                    name="Prévision 6 jours",
-                    line=dict(color="limegreen", width=3, dash="dash"),
-                    marker=dict(size=8),
-                )
+            # -----------------------------
+            # Axes & layout
+            # -----------------------------
+            y_min = (
+                df_plot[["daily_conso_kwh", "yhat", "yhat_lower"]]
+                .min()
+                .min()
+                * 0.95
+            )
+            y_max = (
+                df_plot[["daily_conso_kwh", "yhat", "yhat_upper"]]
+                .max()
+                .max()
+                * 1.05
             )
 
-            # Optionnel : background léger pour horizon J→J+6
-            fig.add_vrect(
-                x0=forecast_start_date,
-                x1=df_plot["ds"].max(),
-                fillcolor="rgba(50,205,50,0.1)",
-                layer="below",
-                line_width=0,
+            fig.update_yaxes(
+                range=[y_min, y_max],
+                title_text="Daily electricity consumption (kWh)",
             )
-
-            # Ajustement axes
-            y_min = min(df_plot[["y", "yhat", "yhat_lower"]].min()) * 0.95
-            y_max = max(df_plot[["y", "yhat", "yhat_upper"]].max()) * 1.05
-            fig.update_yaxes(range=[y_min, y_max], title_text="Consommation (kW)")
             fig.update_xaxes(title_text="Date")
 
-            # Layout dark theme + marges réduites
             fig.update_layout(
                 template="plotly_dark",
-                margin=dict(l=10, r=10, t=5, b=10),
+                margin=dict(l=10, r=10, t=10, b=10),
                 plot_bgcolor="#111827",
                 paper_bgcolor="#111827",
                 font=dict(color="#E2E8F0", size=14),
                 height=440,
             )
 
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
+

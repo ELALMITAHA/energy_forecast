@@ -1,5 +1,8 @@
 from pathlib import Path
+
+import numpy as np
 import pandas as pd
+
 
 from utils.logger import logger
 from configs.paths_config import BASE_DIR, RAW_DIR, PROCESSED_DIR
@@ -72,6 +75,8 @@ def process_target(
         # ********** Copy the dataframe to avoid modifying the original *************
         df_cp = df.copy()
 
+ 
+
         # ********** Drop debug column if exists *************
         df_cp = df_cp.drop("range(date_heure,1day)", axis=1, errors="ignore")
 
@@ -84,6 +89,21 @@ def process_target(
 
         # ********** Sort by date and reset index *************
         df_cp = df_cp.sort_values("date").reset_index(drop=True)
+
+        # ********** Handling abnormal zeros in target *********
+        series = df_cp["daily_conso_kwh"]
+
+        # considérer les 0 comme manquants
+        series_no_zeros = series.replace(0, np.nan)
+
+        rolling_mean = (
+            series_no_zeros
+            .rolling(window=5, min_periods=1, center=True)
+            .mean()
+        )
+
+        # remplacer uniquement les 0
+        df_cp.loc[series == 0, "daily_conso_kwh"] = rolling_mean[series == 0]
 
         # ********** Save processed Parquet file *************
         save_path = Path(output_folder, output_file_name)

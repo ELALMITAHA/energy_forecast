@@ -5,26 +5,46 @@ from prophet import Prophet
 
 class ProphetInterface(BaseModel):
     """
-    Prophet model interface for training and forecasting time series data.
+        Prophet model interface for training and forecasting time series data.
 
-    This class provides a standardized interface for:
-    - Building a Prophet model with specified hyperparameters.
-    - Suggesting hyperparameter search space for Optuna.
-    - Fitting the model on training data.
-    - Generating forecasts on test data, including regressors and holidays.
+        This class provides a standardized interface for:
+        - Building a Prophet model with specified hyperparameters.
+        - Suggesting hyperparameter search space for Optuna.
+        - Fitting the model on training data.
+        - Generating forecasts on test data, including regressors and holidays.
 
-    Attributes
-    ----------
-    train_df : pd.DataFrame
-        Training dataset.
-    test_df : pd.DataFrame
-        Testing dataset.
-    model : Prophet
-        Prophet model instance.
-    target : str
-        Name of the target column.
-    regressors : list of str
-        List of additional regressors used in the model.
+        Attributes
+        ----------
+        train_df : pd.DataFrame
+            Training dataset.
+        test_df : pd.DataFrame
+            Testing dataset.
+        model : Prophet
+            Prophet model instance.
+        target : str
+            Name of the target column.
+        regressors : list of str
+            List of additional regressors used in the model.
+
+        Raises
+        ------
+        ValueError
+            If the input dataset is invalid or missing required columns.
+        RuntimeError
+            If model fitting or prediction fails unexpectedly.
+
+        Notes
+        -----
+        - Designed for production pipelines with reproducibility.
+        - Idempotent: repeated calls produce the same outputs if inputs are unchanged.
+        - Structured logging is recommended for monitoring.
+
+        Example
+        -------
+        >>> interface = ProphetInterface()
+        >>> model = interface.build(params={"changepoint_prior_scale":0.005})
+        >>> model = interface.fit(train_df=my_train_data)
+        >>> forecast = interface.predict(test_df=my_test_data)
     """
 
     # ***** Initialization *****

@@ -91,7 +91,6 @@ def merge_target_weather(
 
         # ********** Save to ***********
         save_path = Path(output_folder, output_full_data_name)
-        print(f"le chemin {save_path} avant save")
         save_path.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(save_path, index=False)
         # ********** Logging ************

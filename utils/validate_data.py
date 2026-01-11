@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pandas as pd
 
 from utils.logger import logger
@@ -5,44 +7,68 @@ from utils.logger import logger
 
 class DataValidator:
     """
-    Validate the structural, temporal, and business rule integrity of a time series dataset.
+        Validate the structural, temporal, and business rule integrity of a time series dataset.
 
-    This class performs a full validation pipeline required before training
-    forecasting or regression models on time series data.
+        This class performs a full validation pipeline required before training
+        forecasting or regression models on time series data.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame containing the time series data.
+        Parameters
+        ----------
+        df : pd.DataFrame
+            Input DataFrame containing the time series data.
 
-    date_col_name : str
-        Name of the column containing date values.
+        date_col_name : str
+            Name of the column containing date values.
 
-    target_col_name : str
-        Name of the target variable column.
+        target_col_name : str
+            Name of the target variable column.
 
-    is_training_data : bool
-        Indicates if this dataset is used for training. Missing target values
-        are allowed only if False.
+        is_training_data : bool
+            Indicates if this dataset is used for training. Missing target values
+            are allowed only if False.
 
-    regressors_list : list of str, optional
-        List of additional regressor column names. Default is None.
+        regressors_list : list of str, optional
+            List of additional regressor column names. Default is None.
 
-    business_rules : dict, optional
-        Dictionary defining optional business constraints applied to the target
-        and regressor variables. Default is None.
+        business_rules : dict, optional
+            Dictionary defining optional business constraints applied to the target
+            and regressor variables. Default is None.
 
-    flag : bool
-        Global validation flag updated during validation checks.
+        flag : bool
+            Global validation flag updated during validation checks.
 
-    Behavior
-    --------
-    - Validates dataset structure: required columns, data types.
-    - Detects missing values and duplicated rows.
-    - Checks chronological order and date continuity.
-    - Applies optional business rules on target and regressors.
-    - Produces a structured validation report.
-    - Designed for MLOps monitoring, logs all issues without breaking the flow.
+        Raises
+        ------
+        KeyError
+            If any of the required columns (`date_col_name`, `target_col_name`) are missing.
+
+        Notes
+        -----
+        - Designed for MLOps pipelines: idempotent, fault-tolerant, and fully logged.
+        - Logs all validation errors and warnings without interrupting execution.
+        - Generates a structured report for monitoring and alerting.
+
+        Example
+        -------
+        >>> import pandas as pd
+        >>> from utils.validate_data import DataValidator
+        >>> df = pd.DataFrame({
+        ...     "date": pd.date_range("2026-01-01", periods=5),
+        ...     "daily_conso_kwh": [10, 15, 14, 13, 12],
+        ...     "temperature_mean": [5, 6, 4, 7, 5]
+        ... })
+        >>> validator = DataValidator(
+        ...     df=df,
+        ...     date_col_name="date",
+        ...     target_col_name="daily_conso_kwh",
+        ...     is_training_data=True,
+        ...     regressors_list=["temperature_mean"]
+        ... )
+        >>> flag, report = validator.validate_data()
+        >>> print(flag)
+        True
+        >>> print(report["missing_values"])
+        {'date': 0, 'daily_conso_kwh': 0, 'temperature_mean': 0}
     """
 
     # ***** Initialization *****
@@ -237,6 +263,7 @@ class DataValidator:
         business_rules_report = self._apply_business_rules()
 
         report = {
+            "date": datetime.utcnow().isoformat(),
             "data_types": {col: str(self.df[col].dtype) for col in self.df.columns},
             "missing_values": missing_values_report,
             "duplicated_rows": int(self.df.duplicated().sum()),

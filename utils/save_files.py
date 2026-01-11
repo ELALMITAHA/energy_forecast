@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 from datetime import datetime
-import uuid
+
+import pandas as pd 
 
 from configs.paths_config import BASE_DIR
 from utils.logger import logger
@@ -43,15 +44,14 @@ def save_validation_report(report, output_path, filename="data_quality_report.js
     return file_path
 
 
-# ***** Save Model Metrics *****
+# ***** Save Model Metrics (overwrite) *****
 def save_metrics(
     metrics: dict,
     output_dir: Path,
     model_name: str,
-    model_version: str,
 ):
     """
-    Save model evaluation metrics as a JSON artifact.
+    Save model evaluation metrics as a JSON artifact, overwriting previous metrics.
 
     Parameters
     ----------
@@ -61,39 +61,31 @@ def save_metrics(
         Base directory to save metrics for the model.
     model_name : str
         Name of the model (used for organizing output).
-    model_version : str
-        Version of the model (used for reporting).
 
     Returns
     -------
     Path
         Path to the saved metrics JSON file.
     """
-    # Create model-specific output directory
-    output_dir = Path(output_dir, model_name)
-    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate unique run ID and timestamp
-    run_id = uuid.uuid4().hex[:8]
+    # Combine metrics with timestamp
     timestamp = datetime.utcnow().isoformat(timespec="seconds")
-
-    # Combine metrics with metadata
     metrics_payload = {
-        "run_id": run_id,
         "timestamp_utc": timestamp,
-        "model_name": model_name,
-        "model_version": model_version,
         **metrics,
     }
 
-    # Define file path
-    file_path = output_dir / f"{timestamp}_run_{run_id}.json"
+    df = pd.DataFrame([metrics_payload])
 
-    # Save metrics to JSON
-    with open(file_path, "w") as f:
-        json.dump(metrics_payload, f, indent=2)
+    # Define file path (always same name, overwrites)
+    save_path = Path(output_dir,model_name,"metrics.parquet")
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(save_path, index=False)
+
+    logger.info(
+        f"[METRICS] Consumption data saved to {save_path.relative_to(BASE_DIR)}"
+    )
 
     # Log success
-    logger.info(f"[METRICS] Metrics saved to {file_path.relative_to(BASE_DIR)}")
+    logger.info(f"[METRICS] Metrics saved to {save_path.relative_to(BASE_DIR)}")
 
-    return file_path
